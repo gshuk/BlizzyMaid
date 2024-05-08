@@ -1,0 +1,64 @@
+rec = zoho.crm.getRecordById("Potentials",id);
+//info rec;
+location = rec.get("Location");
+lis = list();
+cleaners = zoho.crm.getRecords("Vendors",0,200,{"cvid":"689224000000767034"});
+hours = rec.get("Cleaning_Hours_Required");
+preferreddays = rec.get("Best_Days");
+postcode = rec.get("Postal_Code").remove(" ");
+hourlyrate = rec.get("Formula_2");
+frequency = rec.get("Frequency");
+if(isempty(rec.get("Pets")))
+{
+	pets = "No";
+}
+else
+{
+	pets = rec.get("Pets");
+}
+info "pets " + pets;
+for each  cleaner in cleaners
+{
+	if(cleaner.get("Area_Covered").contains(location))
+	{
+		info cleaner;
+		mp = Map();
+		mp.put("phone",cleaner.get("Phone"));
+		mp.put("name",cleaner.get("Vendor_Name"));
+		lis.add(mp);
+	}
+}
+if(rec.get("Ironing"))
+{
+	templateName = "new_job_8_ironing";
+	broadcastName = "zoho_auto_" + templateName;
+}
+else
+{
+	templateName = "new_job_8";
+	broadcastName = "zoho_auto_" + templateName;
+}
+for each  person in lis
+{
+	info person;
+	number = person.get("phone").toString();
+	number = number.removeFirstOccurence("0").remove(" ");
+	headerValue = Map();
+	headerValue.put("Authorization","Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3ZDhjNDA1Yy0wOTQ0LTQwMzItODIyMy1jY2VkMGMwZjg1MmEiLCJ1bmlxdWVfbmFtZSI6Im9mZmljZUBiaXp6eW1haWQuY28udWsiLCJuYW1laWQiOiJvZmZpY2VAYml6enltYWlkLmNvLnVrIiwiZW1haWwiOiJvZmZpY2VAYml6enltYWlkLmNvLnVrIiwiYXV0aF90aW1lIjoiMDMvMjkvMjAyNCAxNzozNDoyMyIsImRiX25hbWUiOiJtdC1wcm9kLVRlbmFudHMiLCJ0ZW5hbnRfaWQiOiIzMDc4MDIiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBRE1JTklTVFJBVE9SIiwiZXhwIjoyNTM0MDIzMDA4MDAsImlzcyI6IkNsYXJlX0FJIiwiYXVkIjoiQ2xhcmVfQUkifQ.WBk3lXRwl3jJRhKMzl2u_ENBGkCkwT8VuK7CViOB278");
+	raw_data = {"template_name":templateName,"broadcast_name":broadcastName,"parameters":"[{'name':'hours', 'value': '" + hours + "'},{'name':'frequency', 'value': '" + frequency + "'},{'name':'preferreddays', 'value': '" + preferreddays + "'},{'name':'location', 'value': '" + location + "'},{'name':'postcode', 'value': '" + postcode + "'},{'name':'hourlyrate', 'value': '" + hourlyrate + "'},{'name':'pets', 'value': '" + pets + "'}]"};
+	number = number.remove(" ");
+	number = number.remove("+");
+	number = number.remove("(");
+	number = number.remove(")");
+	number = number.remove("-");
+	resp = invokeurl
+	[
+		url :"https://live-mt-server.wati.io/307802/api/v1/sendTemplateMessage/44" + number + "?SourceType=ZOHO"
+		type :POST
+		parameters:raw_data.toText()
+		headers:headerValue
+		detailed:true
+		content-type:"application/json"
+	];
+	info resp;
+}
